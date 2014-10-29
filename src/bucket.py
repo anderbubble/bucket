@@ -33,10 +33,11 @@ def main ():
                 print >>sys.stderr, '{0}: {1}'.format(ex.strerror, bucket_full_dir)
                 if not os.path.exists(bucket_full_dir):
                     continue
-            shutil.copy(file_path, bucket_full_path)
+            if args.move:
+                shutil.move(file_path, bucket_full_path)
+            else:
+                shutil.copy(file_path, bucket_full_path)
         print bucket_relative_path
-
-
 
 
 def mkdir_p (path):
@@ -76,9 +77,12 @@ def build_parser ():
                         help='prefer these EXTensions when bucketing files')
     parser.add_argument('-n', '--noop', action='store_true',
                         help='do not actually bucket any files')
+    parser.add_argument('-m', '--move', action='store_true',
+                        help='move, rather than copy, bucketed files')
     parser.set_defaults(
         noop = False,
         verbose = False,
+        move = False,
     )
     return parser
 
