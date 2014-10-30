@@ -38,7 +38,8 @@ def main ():
             else:
                 shutil.copy(file_path, bucket_full_path)
             xattr.xattr(bucket_full_path).set('user.mime_type', mime_type)
-        print bucket_relative_path
+        if not args.verbose:
+            print bucket_relative_path
 
 
 def mkdir_p (path):
