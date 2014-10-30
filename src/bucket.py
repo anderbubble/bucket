@@ -37,7 +37,9 @@ def main ():
                 shutil.move(file_path, bucket_full_path)
             else:
                 shutil.copy(file_path, bucket_full_path)
-            xattr.xattr(bucket_full_path).set('user.mime_type', mime_type)
+            file_attributes = xattr.xattr(bucket_full_path)
+            file_attributes.set('user.mime_type', mime_type)
+            file_attributes.set('user.bucket.sha1', digest)
         if not args.verbose:
             print bucket_relative_path
 
