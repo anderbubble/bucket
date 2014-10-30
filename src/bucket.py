@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 
-
 import argparse
 import errno
 import hashlib
@@ -9,20 +8,21 @@ import mimetypes
 import os
 import shutil
 import sys
+import xattr
 
 
 def main ():
     args = build_parser().parse_args()
     for file_path in args.files:
-        extension = guess_extension(file_path, args.extensions)
+        mime_type, _ = mimetypes.guess_type(file_path)
         digest = git_style_hash_object(file_path)
         bucket_relative_dir = os.path.join(*list(digest))
         bucket_full_dir = os.path.join(args.bucket, bucket_relative_dir)
-        bucket_file_name = ''.join((digest, extension))
-        bucket_relative_path = os.path.join(bucket_relative_dir, bucket_file_name)
-        bucket_full_path = os.path.join(bucket_full_dir, bucket_file_name)
+        bucket_relative_path = os.path.join(bucket_relative_dir, digest)
+        bucket_full_path = os.path.join(bucket_full_dir, digest)
         if args.verbose:
-            print >>sys.stderr, '{source_file} -> {bucket_destination}'.format(
+            print >>sys.stderr, '{mime_type} {source_file} -> {bucket_destination}'.format(
+                mime_type = mime_type,
                 source_file = file_path,
                 bucket_destination = bucket_full_path,
             )
@@ -37,6 +37,7 @@ def main ():
                 shutil.move(file_path, bucket_full_path)
             else:
                 shutil.copy(file_path, bucket_full_path)
+            xattr.xattr(bucket_full_path).set('user.mime_type', mime_type)
         print bucket_relative_path
 
 
@@ -50,20 +51,6 @@ def mkdir_p (path):
             raise
 
 
-def guess_extension (file_path, preferred_extensions=[]):
-    mimetype, _ = mimetypes.guess_type(file_path)
-    if preferred_extensions:
-        valid_extensions = [
-            extension.lower()
-            for extension in mimetypes.guess_all_extensions(mimetype)
-        ]
-        for extension in preferred_extensions:
-            if extension.lower() in valid_extensions:
-                return extension
-
-    return mimetypes.guess_extension(mimetype)
-
-
 def build_parser ():
     parser = argparse.ArgumentParser()
     parser.add_argument('files', metavar='FILE', nargs='+',
@@ -72,9 +59,6 @@ def build_parser ():
                         help='DIRectory to use to store the bucket') 
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='display more information about where files will be bucketed')
-    parser.add_argument('-x', '--extension', dest='extensions',
-                        metavar='EXT', nargs='*',
-                        help='prefer these EXTensions when bucketing files')
     parser.add_argument('-n', '--noop', action='store_true',
                         help='do not actually bucket any files')
     parser.add_argument('-m', '--move', action='store_true',
