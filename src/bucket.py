@@ -14,6 +14,7 @@ import xattr
 def main ():
     args = build_parser().parse_args()
     for file_path in args.files:
+        file_basename = os.path.basename(file_path)
         mime_type, _ = mimetypes.guess_type(file_path)
         digest = git_style_hash_object(file_path)
         bucket_relative_dir = os.path.join(*list(digest))
@@ -40,6 +41,7 @@ def main ():
             file_attributes = xattr.xattr(bucket_full_path)
             file_attributes.set('user.mime_type', mime_type)
             file_attributes.set('user.bucket.sha1', digest)
+            file_attributes.set('user.bucket.original_filename', file_basename)
         if not args.verbose:
             print bucket_relative_path
 
